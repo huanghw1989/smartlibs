@@ -1,0 +1,35 @@
+### 单独测试子模型预测
+# > smart_auto tests.aaas.pipeline.model_a test_predict
+# 上面命令等同于: python3 -m smart.auto.run tests.aaas.pipeline.model_a test_predict
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    - .*
+
+
+trees:
+  test_data:
+    __flow__:
+    - jsonl__file.read(train_data)~@send
+    - print.watch
+    - tests__model_a.on_end
+
+  test_predict:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+  # 直接调用子模型做测试
+    __flow__:
+    - jsonl__file.read(train_data)~@send
+    - tests__model_a.predict
+    - print.watch
+    tests__model_a.predict:
+      worker_num: 2
+      worker_mode: process
+
+
+configs:
+  train_data:
+    file_name: train_data.jsonl
+    dir_path: tests/aaas/pipeline

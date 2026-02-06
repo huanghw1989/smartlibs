@@ -1,0 +1,86 @@
+### find_available_gpu
+# python -m smart.auto.run tests.auto_task.gpu.cuda_tool find_available_gpu
+# python -m smart.auto.run tests.auto_task.gpu.cuda_tool find_available_gpu --bind_arg.cuda_tool.find_available_gpu.shuffle=1
+### hook_available_gpu
+# python -m smart.auto.run tests.auto_task.gpu.cuda_tool hook_available_gpu
+# python -m smart.auto.run tests.auto_task.gpu.cuda_tool hook_available_gpu --bind_arg.cuda_tool.hook_available_gpu.free_memory_ratio=.8
+### 本地模拟测试
+# python -m smart.auto.run tests.auto_task.gpu.cuda_tool mock_available_gpu
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    - .cuda_tool
+
+trees:
+  # 多模型同时预测的第一种方式
+  # 这段任务树将调用了3次find_available_gpu，会最多占用3张显卡
+  # find_available_gpu函数通过context实现了避免获取到重复的显卡对机制
+  find_available_gpu:
+    tool.range~send:
+      worker_num: 1
+      worker_mode: thread
+    # find_available_gpu 方法获取指定数量的可用Gpu，并设置到环境变量CUDA_VISIBLE_DEVICES
+    cuda_tool.find_available_gpu(find_gpu_args)~@test_cuda_tool.model_a_predict:
+      worker_num: 2
+      prev: tool.range
+    # find_available_gpu 方法获取指定数量的可用Gpu，并设置到环境变量CUDA_VISIBLE_DEVICES
+    cuda_tool.find_available_gpu$2(find_gpu_args)~@test_cuda_tool.model_b_predict:
+      worker_num: 1
+      prev: cuda_tool.find_available_gpu
+    print.watch:
+      prev: cuda_tool.find_available_gpu$2
+
+  # 多模型同时预测的第二种方式
+  hook_available_gpu:
+    # hook_available_gpu会在其他任务启动前，先获取指定数量的可用Gpu保存到context
+    cuda_tool.hook_available_gpu(hook_find_gpu)~@print.all_params:
+    tool.range~send:
+      worker_num: 1
+      worker_mode: thread
+    # pop_gpu_from_ctx 方法从context中的available_gpu_list pop GPU，并设置到环境变量CUDA_VISIBLE_DEVICES
+    cuda_tool.pop_gpu_from_ctx(model_a_args)~@test_cuda_tool.model_a_predict:
+      worker_num: 2
+      prev: tool.range
+    cuda_tool.pop_gpu_from_ctx$2(model_b_args)~@test_cuda_tool.model_b_predict:
+      worker_num: 1
+      prev: cuda_tool.pop_gpu_from_ctx
+    print.watch:
+      prev: cuda_tool.pop_gpu_from_ctx$2
+  
+  # 多模型同时预测的第二种方式（本地模拟测试）
+  mock_available_gpu:
+    # 模拟hook_available_gpu方法，在其他任务启动前，先获取指定数量的可用Gpu保存到context
+    test_cuda_tool.mock_available_gpu(hook_find_gpu)~@print.all_params:
+    tool.range~send:
+      worker_num: 1
+      worker_mode: thread
+    # pop_gpu_from_ctx 方法从context中的available_gpu_list pop GPU，并设置到环境变量CUDA_VISIBLE_DEVICES
+    cuda_tool.pop_gpu_from_ctx(model_a_args)~@test_cuda_tool.model_a_predict:
+      worker_num: 2
+      prev: tool.range
+    cuda_tool.pop_gpu_from_ctx$2(model_b_args)~@test_cuda_tool.model_b_predict:
+      worker_num: 1
+      prev: cuda_tool.pop_gpu_from_ctx
+    print.watch:
+      prev: cuda_tool.pop_gpu_from_ctx$2
+
+configs:
+  print_env:
+    env_names:
+    - CUDA_VISIBLE_DEVICES
+  
+  find_gpu_args:
+    gpu_num: 1
+    shuffle: False
+    free_memory_ratio: .8
+
+  hook_find_gpu:
+    gpu_num: 3
+    shuffle: True
+    free_memory_ratio: .8
+    # device_env_key: app.CUDA_VISIBLE_DEVICES
+  model_a_args:
+    gpu_num: 1
+
+  model_b_args:
+    gpu_num: 1

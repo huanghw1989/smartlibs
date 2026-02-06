@@ -1,0 +1,18 @@
+# # 测试读取数据集文件
+# > smart_auto tests.aaas.pipeline.test_dataset test_data
+# 上面命令等同于: python3 -m smart.auto.run tests.aaas.pipeline.test_dataset test_data
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+
+trees:
+  test_data:
+    __flow__:
+    - jsonl__file.read(train_data)~@send
+    - print.watch
+
+configs:
+  train_data:
+    file_name: train_data.jsonl
+    dir_path: tests/aaas/pipeline

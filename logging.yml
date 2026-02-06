@@ -1,0 +1,53 @@
+# See: https://docs.python.org/zh-cn/3/library/logging.config.html
+# format: https://docs.python.org/zh-cn/3/library/logging.html#logging.Formatter
+version: 1
+# 这个参数很重要, 缺省True将导致未在配置的loggers都不打印日志
+disable_existing_loggers: False
+formatters:
+  brief:
+    format: "%(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+  default:
+    format: "%(asctime)s %(levelname)-5s %(name)-5s %(message)s"
+  process:
+    format: "%(asctime)s %(levelname)-5s [%(process)d] %(name)-5s %(message)s"
+  thread:
+    format: "%(asctime)s %(levelname)-5s [%(thread)d] %(name)-5s %(message)s"
+  debug:
+    format: "%(asctime)s,%(msecs)03d %(levelname)-5s [%(process)d:%(thread)x] [%(name)s:%(filename)s:%(lineno)d] %(message)s"
+    datefmt: "%H:%M:%S"
+handlers:
+  console:
+    class: logging.StreamHandler
+    # formatter: default
+    # formatter: debug
+    formatter: process
+    level: DEBUG
+    stream: ext://sys.stdout
+  file:
+    class: logging.handlers.TimedRotatingFileHandler
+    formatter: process
+    when: d
+    interval: 1
+    filename: logs/smartlibs.log
+    # __pattern_filename: logs/smartx_${HOSTNAME}_${pid}.log
+    backupCount: 30
+# 缺省logger
+root:
+  level: DEBUG
+  handlers:
+    - console
+    - file
+loggers:
+  auto:
+    # level: INFO
+    level: DEBUG
+  auto_loader:
+    level: INFO
+    # level: DEBUG
+  auto_trace:
+    level: DEBUG
+  utils_trace:
+    level: DEBUG
+  matplotlib:
+    level: INFO

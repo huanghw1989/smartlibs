@@ -1,0 +1,27 @@
+# Run Example:
+# python -m smart.auto.run tests.auto.test.debug range_head
+tasks:
+  range:
+    class: tests.auto.test.debug.task_range
+    def:
+      start:
+        kwargs:
+          end: 21
+          start: 1
+          step: 1
+  head:
+    class: tests.auto.test.debug.task_print_head
+    def:
+      start:
+        kwargs:
+          head: 5
+          log_prefix: '### {thread}-{idx}'
+          # log_prefix: false
+          timeout: 1
+trees:
+  range_head:
+    range:
+      next: head
+    head:
+      worker_mode: thread
+      worker_num: 2

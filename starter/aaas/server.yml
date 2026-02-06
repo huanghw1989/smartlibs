@@ -1,0 +1,37 @@
+# Run Example:
+# run tree: python -m smart.auto.run starter.helloworld.auto range
+# run task: python -m smart.auto.run starter.helloworld.auto task:example_task.range~attach~log
+# debug tree: python -m smart.auto.run_debug starter.helloworld.auto range
+# parse yml: python -m smart.auto.run starter.helloworld.auto --only_parse
+# run tree (bind config exp): python -m smart.auto.run starter.helloworld.auto learn_task_exp
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    - starter.aaas.*
+    
+trees:
+  test:
+    tools__tool.range$1~@tools__print.item_iter:
+    
+  attach_guid:
+    __sibling__:
+      worker_num: 1
+    __flow__:
+      - redis__pip.conn(redis_local)~recv~@send
+      - example__guid.attach_guid
+      - redis__pip.conn$2(redis_local)~send
+  
+  test_hook:
+    __sibling__:
+      worker_num: 1
+    __flow__:
+      - redis__pip.conn(redis_local)~recv~@send
+      - example__guid.attach_guid~on_end
+      - redis__pip.conn$2(redis_local)~send
+
+configs:
+  redis_local:
+    host: localhost
+    port: 6379
+    password: 

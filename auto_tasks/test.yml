@@ -1,0 +1,25 @@
+# 测试客户端: smart_auto auto_tasks.test helloworld
+# 启动服务端: smart_aaas --port=82
+# 测试服务端: smart_auto auto_tasks.test aaas --env.port=82
+version: 1.0
+
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    
+trees:
+  helloworld:
+    tools__tool.range~@tools__print.item_iter:
+  
+  aaas:
+    aaas__client.conn(aaas_ep)~run(task_helloworld):
+
+configs:
+  aaas_ep:
+    __template__:
+      entrypoint: ${host:=localhost}:${port:=80}
+    namespace: test
+  
+  task_helloworld:
+    task_name: helloworld
+    task_module: auto_tasks.test

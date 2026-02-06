@@ -1,0 +1,72 @@
+configs:
+  root_dict:
+    key_r: 'root'
+    
+  dicts:
+    dict_a:
+      key_a: 1
+      key_b: 2
+    dict_a_extend:
+      __extend__: 
+      - ..dict_a
+      - ...root_dict
+      __template__:
+        key_c_2: ${config:.key_c}
+      key_c: 3
+
+  ex_template:
+    __template__:
+      model_dir: $WORK_PATH/${MODEL_DIR}
+      vocab_file: ${config:.model_dir}/${VOCAB_FILE_NAME:=vocab.txt}
+
+  root_key:
+    sub_key1:
+      sub_key11: sub11
+      __template__:
+        sub_key12: ${config:.sub_key11}
+        sub_key13: ${config:..sub_key2}
+        # 相对路径的key_path, 缺省config命名空间
+        sub_key14: ${...root_key2}
+    sub_key2: sub2
+  root_key2: root2
+
+  root_a:
+    sub_key1: val_a1
+    sub_key2: val_a2
+  root_b: 
+    sub_key3: val_b3
+  root_c:
+    __extend__:
+    - root_a
+    - root_b
+
+  if_test:
+    __if__:
+      TEST_IF_ENV:
+        val_case1:
+          key_a: val_a1
+          key_b: val_b1
+        val_case2:
+          key_a: val_a2
+        __default__:
+          key_a: val_default
+      bool(TEST_IF_ENV):
+        True:
+          b_key_true: 1
+        False:
+          b_key_false: 1
+      int(TEST_IF_ENV):
+        1:
+          key_int: 1
+        2: 
+          key_int: 2
+        __default__:
+          key_int: default
+  
+  obj_list:
+    - key_a: 1
+      key_b: x
+      key_c:
+        sub_a: 0
+    - key_a: 2
+      key_b: y

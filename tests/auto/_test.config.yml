@@ -1,0 +1,46 @@
+configs:
+  example_task:
+    default:
+      start: 5
+
+  range:
+    start_5:
+      start: 5
+    start_10:
+      start: 10
+    end_20:
+      end: 20
+    step_2:
+      step: 2
+  attach__full:
+    attach_time: True
+  
+  func_task:
+    debug__range:
+      end: 5
+    debug__print_head:
+      __template__:
+        # use env DEBUG_HEAD (setted in cfg_hook.py)
+        head: ${DEBUG_HEAD}
+      no_exit_arg: 666
+  
+  linear_solve:
+    linear_dataset:
+      size: 500
+      weight: 5.1
+      bias: 1.2
+      noise: 0.15
+      __if__:
+        ds_weight:
+          l:
+            weight: 51.1
+          s:
+            weight: 0.51
+    linear_dataset2:
+      noise: 0.01
+  linear_dataset_wl:
+    __extend__: linear_dataset
+    weight: 51.1
+  linear_dataset3_ws:
+    __extend__: linear_dataset
+    weight: 0.51

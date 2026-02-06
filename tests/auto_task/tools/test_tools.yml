@@ -1,0 +1,31 @@
+version: "1.0"
+configs:
+  state_file:
+    file_name: "state_file.json"
+    file_path: "logs/tmp"
+    save_step: 5
+    id_keys: i
+    print_save: 1
+  range_20:
+    size: 20
+  range_100:
+    size: 100
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    - .*
+trees:
+  test_statefile:
+    __siblings__:
+      worker_num: 1
+    __flow__:
+    # statefile.read结果可通过join参数获取
+    # 也可以通过self.context.state('statefile').wait('init')获取初始状态字典
+    - tools.statefile.read(state_file)~@tools.print.all_params
+    # statefile.start的独立任务单元用法
+    - tools.tool.range(range_20)~send
+    - tools.statefile.start(state_file)
+    # statefile.start的join用法
+    # - tools.tool.range(range_20)~@tools.statefile.start(state_file)~send
+    - test__shuffle
+    - tools.statefile.end(state_file)

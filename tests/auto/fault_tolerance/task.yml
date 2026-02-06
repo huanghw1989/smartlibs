@@ -1,0 +1,80 @@
+# python3 -m smart.auto.run tests.auto.fault_tolerance.task --only_parse --rst_format=yaml
+# python3 -m smart.auto.run tests.auto.fault_tolerance.task fault_test
+version: 1.0
+import:
+- tests.auto_configs
+
+tasks:
+  __load__:
+    - tests.auto.*
+    - auto_tasks.*.*
+  
+  test.mod_task:
+    # class: tests.auto.mod_task
+    init:
+      kwargs:
+        key_a: 1
+
+  test.test_tasks:
+    init:
+      kwargs:
+        key_b: 1
+
+trees:
+  fault_test:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+    - tool.range~throttle(throttle_args)~@print.watch(watch_args)~@send
+    - print.all_params~@test_tasks.attach_mayerr
+    - print.watch(watch_args)
+    # test_tasks.attach_mayerr:
+    print.all_params:
+      join_mode: object
+      restart: "on-error:3" # 每个worker最多重新运行3次
+      # restart: "on-error" # 出错重新运行任务
+      __template__:
+        worker_num: ${worker_num:=1}
+
+  fault_test_mp:
+    __sibling__:
+      worker_num: 1
+      worker_mode: process
+    __flow__:
+    - tool.range~throttle(throttle_args)~@print.watch(watch_args)~@send
+    - test_tasks.attach_mayerr
+    - print.watch(watch_args)
+    test_tasks.attach_mayerr:
+      restart: "on-error:3" # 每个worker最多重新运行3次
+      # restart: "on-error" # 出错重新运行任务
+      __template__:
+        worker_num: ${worker_num:=1}
+
+  timeout_tolerance:
+    __sibling__:
+      worker_num: 1
+      worker_mode: process
+      max_queue_size: 1
+    __flow__:
+    - tool.range~throttle(throttle_args)~@print.watch(watch_args)~@send
+    - test_tasks.attach_mayerr
+    - print.watch(watch_args)
+    test_tasks.attach_mayerr:
+      restart: "on-error:3" # 每个worker最多重新运行3次
+      # restart: "on-error" # 出错重新运行任务
+      __template__:
+        worker_num: ${worker_num:=1}
+
+configs:
+  mock_data_args:
+    size: 30
+    batch: 1000
+    text_len: 20
+
+  throttle_args:
+    speed: 2
+
+  watch_args:
+    head: 20
+    step: 10

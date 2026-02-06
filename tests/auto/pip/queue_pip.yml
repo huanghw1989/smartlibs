@@ -1,0 +1,11 @@
+# python3 -m smart.auto.run tests.auto.pip.queue_pip multi_recv
+tasks:
+  __load__:
+  - auto_tasks.*.*
+  - .*
+
+trees:
+  multi_recv:
+    __flow__:
+    - tool.range~@send
+    - test_pip_queue.multi_recv

@@ -1,0 +1,55 @@
+# python3 -m smart.auto.run tests.aaas.unitest test
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    - .*
+    - .*.*
+    
+trees:
+  test:
+    tools.tool.range~@tools.print.item_iter:
+  
+  test_mt:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+      - tools.tool.range~@send
+      - example__guid.attach_guid
+      - print.watch
+
+  test_mp:
+    __sibling__:
+      worker_num: 1
+      worker_mode: process
+    __flow__:
+      - tools.tool.range~@send
+      - example__guid.attach_guid
+      - print.watch
+    
+  err_mt:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+      - tools.tool.range~@send
+      - aaas__unitest.mock_err
+      - print.watch
+
+  err_mp:
+    __sibling__:
+      worker_num: 1
+      worker_mode: process
+    __flow__:
+      - tools.tool.range~@send
+      - aaas__unitest.mock_err
+      - print.watch
+    
+  attach_guid:
+    __sibling__:
+      worker_num: 1
+    __flow__:
+      - redis__pip.conn(redis_local)~recv~@send
+      - example__guid.attach_guid
+      - redis__pip.conn$2(redis_local)~send

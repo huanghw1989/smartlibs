@@ -1,0 +1,6 @@
+# python -m smart.auto.run tests.auto_task.test --only_parse --rst_format=yaml
+tasks:
+  __load__:
+    - .*
+    - .*.*
+    - auto_tasks.*.*

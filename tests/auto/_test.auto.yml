@@ -1,0 +1,88 @@
+# Run Example:
+# run tree: python -m smart.auto.run starter.helloworld.auto range
+# run task: python -m smart.auto.run starter.helloworld.auto task:example_task.range~attach~log
+# debug tree: python -m smart.auto.run_debug starter.helloworld.auto range
+# parse yml: python -m smart.auto.run starter.helloworld.auto --only_parse
+# run tree (bind config exp): python -m smart.auto.run starter.helloworld.auto learn_task_exp
+version: 1.0
+tasks:
+  __load__:
+    # 不设置 load_opt 时可直接用数组
+    # - starter.helloworld.*
+    # - auto_tasks.*.*
+    starter.helloworld.*:
+      # 重命名模块名
+      as_module: starter
+    auto_tasks.*.*:
+      # 追加在原模块名之前
+      as_module: lib.
+    auto_tasks.tools.*:
+      as_module: lib
+      alias_module: lib.
+
+  # @auto_load.task('starter.example_task')装饰器等同于 starter.example_task.class 配置
+  # @auto_load.method(['example_task.default'])装饰器等同于: starter.example_task.def.range 配置
+  # starter.example_task:
+  #   class: starter.helloworld.first_task.ExampleTask
+  #   alias:
+  #     - example_task
+  #   def:
+  #     range:
+  #       bind_config:
+  #         - example_task.default
+
+  # linear_solve:
+  #   class: starter.helloworld.bind_obj.linear_solve
+  #   def:
+  #     start:
+  #       bind_obj:
+  #         linear_dataset:
+  #           path: starter.helloworld.bind_obj.linear_dataset
+  #           config: ['linear_solve__linear_dataset']
+
+trees:
+  range:
+    example_task.range~attach,st~log:
+    # starter.example_task.range~attach,st~log:
+      __template__:
+        worker_num: ${range_worker_num:=0}
+
+  learn_task_exp:
+    example_task.range(range.start_5 + range.end_20 + range.step_2)~attach(attach__full),st~log:
+
+  learn_global_join:
+    example_task.range~attach(attach__full)~@lib.print.item_iter,@lib.print.all_params:
+  
+  multi_task:
+    # prev 和 next 二选一
+    example_task.range~@lib.tool.send:
+      # next:
+      #   - example_task.range$2
+    example_task.attach,st~log:
+      prev: example_task.range
+
+  flow_task:
+    __flow__:
+      - example_task.range~attach,st~log
+      # task key suffix for alias name: $2
+      - example_task.range$2~attach,st~log
+
+  learn_func_task:
+    func_task__range:
+      next:
+        - func_task__print_head
+    func_task__print_head:
+  
+  # 高阶用法: 注入可配置对象
+  learn_bind_obj:
+    linear_solve:
+      bind_obj:
+        linear_dataset:
+          config: ['linear_solve.linear_dataset', 'linear_solve.linear_dataset2']
+
+import: 
+  # - ${ARG_CONFIG:=./_test.config.yml}
+  - ${ARG_CONFIG:=._test.config}
+
+hooks:
+  - starter.helloworld.cfg_hook.EnvHook

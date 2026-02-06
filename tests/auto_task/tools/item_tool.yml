@@ -1,0 +1,25 @@
+# python3 -m smart.auto.run tests.auto_task.tools.item_tool merge
+tasks:
+  __load__:
+    - auto_tasks.*.*
+
+trees:
+  merge:
+    __siblings__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+    - jsonl__file.read(data1)~@send
+    - item_tool.merge(merge_args)~@send
+    - print.watch
+    # item_tool.merge(merge_args):
+    #   remote_debug: True
+
+configs:
+  data1:
+    file_name: test_data1.jsonl
+    dir_path: tests/auto_task/tools
+  merge_args:
+    group_key: ['id1', 'id2']
+    group_idx_key: group_idx
+    key_item_list: item_list

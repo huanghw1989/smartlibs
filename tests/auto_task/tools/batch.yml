@@ -1,0 +1,47 @@
+# python3 -m smart.auto.run tests.auto_task.tools.batch batch_test
+tasks:
+  __load__:
+  - auto_tasks.*.*
+  - .*
+
+trees:
+  batch_test:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+    - tool.range(range_args)~throttle(throttle_args)~@send
+    # - tool.range(range_args)~@send
+    - batch.recv(batch_recv)~@send
+    - print.watch
+
+  batch_handle:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+    - tool.range(range_args)~throttle(throttle_args)~@send
+    # - tool.range(range_args)~@send
+    - batch.recv(batch_recv2)~@batch_mock_handle.handle
+    - print.watch
+
+configs:
+  range_args:
+    size: 10
+  
+  throttle_args:
+    speed: 3
+    batch: 2
+    log_step: 2
+
+  batch_recv:
+    batch_size: 3
+    block: True
+    timeout: 0.5
+    batch_timeout: 0.8
+
+  batch_recv2:
+    batch_size: 3
+    block: True
+    timeout: 1.0
+    batch_timeout: 1.0

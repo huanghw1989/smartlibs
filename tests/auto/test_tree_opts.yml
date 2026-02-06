@@ -1,0 +1,80 @@
+version: 1.0
+tasks:
+  __load__:
+    - starter.helloworld.*
+    - auto_tasks.*.*
+
+trees:
+  queue_max_size:
+    __sibling__:
+      __template__:
+        worker_num: ${worker_num:=1}
+      max_queue_size: 100
+    __flow__:
+    # - tools__tool.range(t_range.size_20)~@tools__print.step(t_print_step.s_1)~send
+    - tools__tool.range(t_range.size_20)~send
+    - tools__tool.throttle(t_throttle.s_10)~send
+    - tools__print.item_iter(t_print.all)
+
+  # python -m smart.auto.run tests.auto.test_tree_opts speed_test --bind_arg.tools__tool.range.size=200000 --bind_arg.tools__tool.throttle.speed=200000
+  speed_test:
+    __sibling__:
+      __template__:
+        worker_num: ${worker_num:=1}
+      # max_queue_size: 10000
+      max_queue_size: 1000000
+    __flow__:
+    # - tools__tool.range(t_range.size_2k)~send
+    - tools__tool.range(t_range.size_20k)~send
+    - tools__tool.throttle(t_throttle.s_10k)~send
+  
+  test_scale:
+    __sibling__:
+      max_queue_size: 100
+      worker_num: 1
+    __flow__:
+    - tool.range(t_range.size_2k)~send
+    - tool.throttle(t_throttle.s_10)~send
+    # - task: tool.throttle(t_throttle.s_10)~send
+    #   name: throttle
+    #   scalable: True
+    #   worker_num: 2
+    - print.watch(t_watch.s_100)
+    # tool.throttle(t_throttle.s_10)~send:
+    #   worker_num: 2
+    scalable.udp(scalable_udp):
+
+configs:
+  t_range:
+    size_20:
+      size: 20
+      time_key: ts
+    size_2k:
+      size: 2000
+      time_key: ts
+    size_20k:
+      size: 20000
+      time_key: ts
+  t_print:
+    all:
+      head: ''
+  t_print_step:
+    s_1:
+      step: 1
+    s_1k:
+      step: 1000
+  t_throttle:
+    s_10:
+      speed: 10
+      batch: 2
+      log_step: 5
+      # interval: .1
+    s_10k:
+      speed: 10000
+      batch: 10000
+      log_step: 10000
+  t_watch:
+    s_100:
+      step: 100
+  scalable_udp:
+    port: 5689

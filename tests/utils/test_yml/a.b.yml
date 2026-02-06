@@ -1,0 +1,7 @@
+configs:
+  key_a: 1
+  all_opts:
+    - &case_1 foo
+    - &case_2 bar
+  opt: *case_1
+  key_bool: True

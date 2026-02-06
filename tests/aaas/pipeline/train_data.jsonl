@@ -1,0 +1,6 @@
+{"guid":"1","text":"建议买入股票，卖出债券", "sentiment": [{"entity":"股票", "tag":"正向"},{"entity":"债券","tag":"负向"}]}
+{"guid":"2","text":"建议卖出股票，买入债券", "sentiment": [{"entity":"股票", "tag":"负向"},{"entity":"债券","tag":"正向"}]}
+{"guid":"3","text":"建议股票债券统统卖掉", "sentiment": [{"entity":"股票", "tag":"负向"},{"entity":"债券","tag":"负向"}]}
+{"guid":"4","text":"赶紧满仓股票和债券", "sentiment": [{"entity":"股票", "tag":"正向"},{"entity":"债券","tag":"正向"}]}
+{"guid":"5","text":"加仓股票", "sentiment": [{"entity":"股票", "tag":"正向"}]}
+{"guid":"6","text":"持观望态度", "sentiment": []}

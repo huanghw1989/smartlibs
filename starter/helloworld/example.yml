@@ -1,0 +1,17 @@
+# Run Example:
+# parse yml: python3 -m smart.auto.run starter.helloworld.example example3 --only_parse --rst_format=yml
+tasks:
+  __load__:
+    starter.helloworld.*:
+      as_module: starter
+      alias_module: helloworld.
+  
+trees:
+  example:
+    __flow__:
+      - starter.example_task.range
+      - starter.example_recv
+  example2:
+    example_task.range:
+  example3:
+    helloworld.example.range:

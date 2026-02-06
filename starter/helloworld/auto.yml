@@ -1,0 +1,142 @@
+# Run Example:
+# run tree: python -m smart.auto.run starter.helloworld.auto range
+# run task: python -m smart.auto.run starter.helloworld.auto task:example_task.range~attach~log
+# debug tree: python -m smart.auto.run_debug starter.helloworld.auto range
+# parse yml: python -m smart.auto.run starter.helloworld.auto --only_parse
+# run tree (bind config exp): python -m smart.auto.run starter.helloworld.auto learn_task_exp
+version: 1.0
+tasks:
+  __load__:
+    # 不设置 load_opt 时可直接用数组
+    # - starter.helloworld.*
+    # - auto_tasks.*.*
+    
+    .*:
+    # starter.helloworld.*:
+      # 重命名模块名
+      as_module: starter
+      alias_module: helloworld.
+    auto_tasks.*.*:
+      as_module: lib
+    auto_tasks.tools.*:
+      as_module: lib
+      # alias_module: lib.
+    auto_tasks.aaas.*:
+      # 追加在原模块名之前
+      as_module: lib.
+
+  # @auto_load.task('starter.example_task')装饰器等同于 starter.example_task.class 配置
+  # @auto_load.method(['example_task.default'])装饰器等同于: starter.example_task.def.range 配置
+  # @auto_load.hook.before_task(['example_task.check_state'])装饰器等同于: starter.example_task.def.check_state 配置
+  # starter.example_task:
+  #   class: starter.helloworld.first_task.ExampleTask
+  #   alias:
+  #     - example_task
+  #   def:
+  #     range:
+  #       bind_config:
+  #         - example_task.default
+  #     check_state:
+  #       hook_type: before_task
+  #       bind_config:
+  #         - example_task.default
+
+  # linear_solve:
+  #   class: starter.helloworld.bind_obj.linear_solve
+  #   def:
+  #     start:
+  #       bind_obj:
+  #         linear_dataset:
+  #           path: starter.helloworld.bind_obj.linear_dataset
+  #           config: ['linear_solve__linear_dataset']
+
+trees:
+  range:
+    example_task.range~attach,st~log:
+    # starter.example_task.range~attach,st~log:
+      __template__:
+        worker_num: ${range_worker_num:=0}
+
+  learn_task_exp:
+    example_task.range(range.start_5 + range.end_20 + range.step_2)~attach(attach__full),st~log:
+
+  learn_global_join:
+    example_task.range~attach(attach__full)~@lib.print.item_iter,@lib.print.all_params:
+  
+  multi_task:
+    # prev 和 next 二选一
+    example_task.range~@lib.tool.send:
+      # next:
+      #   - example_task.range$2
+    example_task.attach,st~log:
+      prev: example_task.range
+
+  flow_task:
+    __flow__:
+      - example_task.range~@send
+      - example_task.attach,st~log
+
+  flow_task_mt:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+      - example_task.range~@send
+      - example_task.attach,st~log
+
+  flow_task_mp:
+    __sibling__:
+      worker_num: 1
+      worker_mode: process
+    __flow__:
+      - example_task.range~@send
+      - example_task.attach,st~log
+
+  learn_func_task:
+    func_task__range:
+      next:
+        - func_task__print_head
+    func_task__print_head:
+  
+  # python -m smart.auto.run starter.helloworld.auto hook_task --env.range_worker_num=2
+  # Tips: 观察 check_state 执行多少次和执行顺序
+  hook_task:
+    __sibling__:
+      __template__:
+        worker_num: ${range_worker_num:=1}
+    # check_state 是通过 auto_load.hook.before_task 声明的勾子函数, 将在多进程任务启动之前执行
+    # on_end 是 after_task 勾子函数, 将在任务树的所有工作进程结束后执行
+    # before_task 和 after_task 勾子函数都将在主进程执行, 不受worker_num影响
+    # before_task 勾子函数可使用 self.stop_task 函数停止任务执行, 但 after_task 仍会被执行
+    # after_task 勾子函数可通过 self.is_stop_task 函数判断是否需要清理资源
+    tool.range~@send:
+      next:
+      - example_task.check_state
+    example_task.check_state~range~attach,st~log~on_end:
+      clean_pip_in: False
+      # remote_debug: 1
+    example_task.check_state$2~range~attach,st~log~on_end:
+      clean_pip_in: False
+  
+  # python -m smart.auto.run starter.helloworld.auto dyn_tree --mp_mode=spawn --bind_arg.example_task.dispatch.tree_name=flow_task
+  dyn_tree:
+    # 动态创建任务树
+    # lib.auto 继承 WithAutoRunner(注入AutoRunner对象), 仅当 lib.auto 作为主任务函数有效
+    example_task.dispatch~@lib.auto.run_tree:
+      join_mode: object
+    # 或:
+    # lib.auto.@example_task.dispatch~run_tree:
+  
+  # 高阶用法: 注入可配置对象
+  learn_bind_obj:
+    linear_solve:
+      bind_obj:
+        linear_dataset:
+          config: ['linear_solve.linear_dataset', 'linear_solve.linear_dataset2']
+
+import: 
+  # - ${ARG_CONFIG:=./config.yml}
+  - ${ARG_CONFIG:=.config}
+
+hooks:
+  - .cfg_hook.EnvHook

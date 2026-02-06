@@ -1,0 +1,76 @@
+### 测试直接串联调用子模型训练
+# > smart_auto tests.aaas.pipeline.fuse_model test_train
+# 上面命令等同于: python3 -m smart.auto.run tests.aaas.pipeline.fuse_model test_train
+### 测试直接串联调用子模型预测
+# > smart_auto tests.aaas.pipeline.fuse_model test_predict
+### 测试predict
+# 启动redis:
+# > docker run -d --name myredis -p 6379:6379 redis redis-server --appendonly yes
+# 启动fuse_model服务:
+# > smart_auto tests.aaas.pipeline.fuse_model predict
+# 测试客户端调用:
+# > smart_auto tests.aaas.pipeline.test_client fuse_model_predict
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    - .*
+
+
+trees:
+  test_data:
+    __flow__:
+    - jsonl__file.read(train_data)~@send
+    - print.watch
+    - tests__model_a.on_end
+
+  test_train:
+  # 直接调用子模型
+    # __sibling__:
+    #   worker_num: 1
+    __flow__:
+    - jsonl__file.read(train_data)~@send
+    # - 做数据集
+    - tests__model_a.train
+    - tests__model_b.train
+    - print.watch
+
+  train:
+  # 直接调用子模型
+    # __sibling__:
+    #   worker_num: 1
+    __flow__:
+    - redis__pip.conn(redis_svr+model_svc.redis_conn)~recv(fuse_model_train.pip_req)~@send
+    # - 做数据集
+    - tests__model_a.train
+    - tests__model_b.train
+    - redis__pip.conn$2(redis_svr)~send(fuse_model_train.pip_resp)
+
+  test_predict:
+  # 直接串联调用子模型, 做测试
+    __flow__:
+    - jsonl__file.read(train_data)~@send
+    # {"guid":"1","text":"建议买入股票，卖出债券"}
+    - tests__model_a.predict
+    # {"guid":"1","text":"建议买入股票，卖出债券", "model_a_pred": ["股票", "债券"]}
+    - tests__model_b.predict
+    # {"guid":"1","text":"建议买入股票，卖出债券", "model_a_pred": ["股票", "债券"], "model_b_pred":[...]}
+    # {"guid":"1","text":"建议买入股票，卖出债券", "sentiment": [{"entity":"股票", "tag":"正向"},{"entity":"债券","tag":"负向"}]}
+    - print.watch
+
+  predict:
+  # 远程串联调用子模型
+    __sibling__:
+      worker_num: 1
+    __flow__:
+    - redis__pip.conn(redis_svr+model_svc.redis_conn)~recv(fuse_model_predict.pip_req+model_svc.redis_recv)~@send
+    # {"guid":"1","text":"建议买入股票，卖出债券"}
+    - tests__model_a.predict
+    # {"guid":"1","text":"建议买入股票，卖出债券", "model_a_pred": ["股票", "债券"]}
+    - tests__model_b.predict
+    # {"guid":"1","text":"建议买入股票，卖出债券", "model_a_pred": ["股票", "债券"], "model_b_pred":[...]}
+    # {"guid":"1","text":"建议买入股票，卖出债券", "sentiment": [{"entity":"股票", "tag":"正向"},{"entity":"债券","tag":"负向"}]}
+    - redis__pip.conn$2(redis_svr)~send(fuse_model_predict.pip_resp)
+
+import: 
+  - ${ARG_CONFIG:=.configs}

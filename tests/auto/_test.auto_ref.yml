@@ -1,0 +1,6 @@
+version: 1.0
+
+import: 
+  # - ${ARG_CONFIG:=...starter.helloworld.auto}
+  - ${ARG_CONFIG:=starter.helloworld.auto}
+  # - ${ARG_CONFIG:=starter/helloworld/auto.yml}

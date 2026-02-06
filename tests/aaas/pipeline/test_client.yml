@@ -1,0 +1,24 @@
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+
+
+trees:
+  fuse_model_predict:
+    __sibling__:
+      worker_num: 1
+    __flow__:
+    # 从jsonl文件读取测试数据
+    - jsonl__file.read(train_data)~@send
+    # 发送数据到 redis 请求队列
+    - redis__pip.conn(redis_svr)~send(fuse_model_mq.pip_req)
+    # 从 redis 响应队列接收数据
+    # 注意: 因为task key(redis__pip.conn)不能重复, 因此第二个加$2, 实际调用的函数仍是redis__pip.conn
+    # 注意2: 由于请求方的服务为daemon模式，不会发送end_cmd给pip_resp队列，所以本测试函数需要手动执行"ctrl+c"终止任务
+    - redis__pip.conn$2(redis_svr)~recv(fuse_model_mq.pip_resp)~@send
+    # 打印接收到到数据(前n条)
+    - print.watch
+
+import: 
+  - ${ARG_CONFIG:=.configs}

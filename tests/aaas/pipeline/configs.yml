@@ -1,0 +1,35 @@
+configs:
+  train_data:
+    file_name: train_data.jsonl
+    dir_path: tests/aaas/pipeline
+
+  redis_svr:
+    host: localhost
+    port: 6379
+    password: 
+  
+  model_svc:
+    redis_conn:
+      redis_kwargs:
+        socket_timeout: 120
+        socket_connect_timeout: 120
+        retry_on_timeout: True
+    redis_recv:
+      is_daemon: True
+      redis_poll_interval: 60
+
+  fuse_model_train:
+    pip_req:
+      key: fuse_model_train_req
+      # # 结束后是否设置ttl
+      end_ttl: 60
+      # # 启动前清空所有旧数据
+      empty_old: True
+    pip_resp:
+      key: fuse_model_train_resp
+
+  fuse_model_predict:
+    pip_req:
+      key: test_fuse_model_mq_req
+    pip_resp:
+      key: test_fuse_model_mq_resp

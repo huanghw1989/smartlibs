@@ -1,0 +1,14 @@
+version: 1.0
+tasks:
+  __load__:
+    - .*
+    - auto_tasks.*.*
+
+trees:
+  test_exception:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+      - fault_handle.task1
+      - fault_handle.task2

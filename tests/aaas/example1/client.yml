@@ -1,0 +1,99 @@
+### Before Run
+# python -m smart.aaas.run
+# uwsgi --http :80 --processes 1 --threads 4 --module "smart.aaas.wsgi:app()"
+# python3 -m smart.aaas.run --task_log logs/task --port 8081
+# uwsgi --http :8081 --processes 2 --threads 4 --module "smart.aaas.wsgi:app()" --pyargv "--worker_num 10 --task_log logs/task"
+#   强制关闭uwsgi进程: ps -ef | grep uwsgi | awk '{print $2}' | xargs kill -9
+### Run Example
+# python -m smart.auto.run tests.aaas.example1.client test_guid_svr
+# python -m smart.auto.run tests.aaas.example1.client start_guid_task --env.port=8081
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    
+trees:
+  __init__:
+    # module下所有任务树的缺省参数
+    task_kwargs:
+      # 任务缺省参数
+      worker_num: 1
+      worker_mode: thread
+  test:
+    __flow__:
+      - tools__tool.range~send
+      - tools__print.item_iter
+  
+  start_guid_task:
+    aaas__client.conn(aaas_local)~run(guid_task):
+
+  test_guid_svr:
+    # __init__:
+    #   error_item_handler:
+    #     # 出错的数据写入到文件
+    #     type: file
+    #     file: logs/error_item.jsonl
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+      # 模拟数据
+      - tools__tool.range~send
+      # 发送数据到 redis 请求队列
+      - redis__pip.conn(redis_local)~send(test_guid_svr.pip_req)
+      # 从 redis 响应队列接收数据, 打印接收到到数据(前n条)
+      # 注意: 因为task key(redis__pip.conn)不能重复, 因此第二个加$2, 实际调用的函数仍是redis__pip.conn
+      - redis__pip.conn$2(redis_local)~recv(test_guid_svr.pip_resp)~@tools__print.item_iter
+    # 启动 aaas 服务端任务
+    aaas__client.conn(aaas_local)~run(guid_task):
+      # # 出错后是否重启
+      # restart: on-error
+      # # 如果任务异常退出，则停止整个任务树
+      # stop_on_err: True
+      # # 启用ack机制
+      # auto_ack: True
+      # # 存放顺序的key, 用于调用send_data自动触发ack
+      # item_ack_id: __ack_idx
+      # # 每条数据出错重试多少次, 0表示不重试, 1表示重试1次(即最多执行2次)
+      # retry_on_err: 3
+      # # 每次重试sleep多少秒
+      # retry_interval: 2
+      # # 连续多少条数据正常处理后，就重置出错计数器(计数器超过retry_on_err的值，worker就退出)
+      # reset_err_counter: 5
+      # # 忽略错误的数据（调用context的error_handler处理出错的数据）
+      # skip_err_item: True
+
+configs:
+  aaas_local:
+    __template__:
+      entrypoint: 127.0.0.1:${port:=80}
+    module: tests.aaas.example1.server
+  
+  test_guid_svr:
+    pip_req:
+      key: test_guid_svr_req
+      # 结束后是否设置ttl
+      end_ttl: 60
+      # 启动前清空所有旧数据
+      empty_old: True
+    pip_resp:
+      key: test_guid_svr_resp
+
+  guid_task:
+    task_name: attach_guid
+    bind_arg:
+      redis__pip.recv:
+        __extend__: test_guid_svr.pip_req
+      redis__pip.send:
+        __extend__: test_guid_svr.pip_resp
+    state_hook:
+      __extend__:
+      - redis_local
+      type: redis
+      state_key_format: "tmp_state.${task_id}"
+      skip_on_err: 1
+
+  redis_local:
+    host: localhost
+    port: 6379
+    password: 

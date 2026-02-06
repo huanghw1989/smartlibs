@@ -1,0 +1,11 @@
+debugpy
+fire
+pyyaml
+requests
+
+websockets
+
+# auto_tasks
+redis
+pynvml
+confluent-kafka

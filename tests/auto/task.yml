@@ -1,0 +1,94 @@
+# python3 -m smart.auto.run tests.auto.task module_task_test
+# python3 -m smart.auto.run tests.auto.task fault_test
+# python3 -m smart.auto.run tests.auto.task log_mp --mp_mode=fork
+version: 1.0
+tasks:
+  __load__:
+    - .*
+    - auto_tasks.*.*
+  
+  test.mod_task:
+    # class: tests.auto.mod_task
+    init:
+      kwargs:
+        key_a: 1
+
+  test.test_tasks:
+    init:
+      kwargs:
+        key_b: 1
+
+trees:
+  mp_queue_test:
+    __sibling__:
+      worker_num: 1
+    __flow__:
+      - stresstest.mock_data(mock_data_args)~@print.watch(watch_args)~@send
+      - tool.throttle(throttle_args)~@print.watch(watch_args)~@send
+    tool.throttle:
+      worker_num: 2
+  
+  type_test:
+    __flow__:
+      - tool.range~@test.repeat_item~@print.watch~@send
+  
+  module_task_test:
+    # mod_task.mock_data~@print.watch~@send:
+    mod_task.mock_data~@test_tasks.watch(watch_args)~@test_tasks.print_params~@send:
+      join_mode: object
+  
+  module_task_test_join:
+    tool.range~@mod_task.print_data:
+  
+  fault_test:
+    __sibling__:
+      worker_num: 1
+      worker_mode: thread
+    __flow__:
+    - tool.range~throttle(throttle_args)~@print.watch(watch_args)~@send
+    - print.all_params~@test_tasks.attach_mayerr
+    - print.watch(watch_args)
+    # test_tasks.attach_mayerr:
+    print.all_params:
+      join_mode: object
+      restart: "on-error:3" # 每个worker最多重新运行3次
+      # restart: "on-error" # 出错重新运行任务
+      __template__:
+        worker_num: ${worker_num:=1}
+
+  fault_test_mp:
+    __sibling__:
+      worker_num: 1
+      worker_mode: process
+    __flow__:
+    - tool.range~throttle(throttle_args)~@print.watch(watch_args)~@send
+    - test_tasks.attach_mayerr
+    - print.watch(watch_args)
+    test_tasks.attach_mayerr:
+      restart: "on-error:3" # 每个worker最多重新运行3次
+      # restart: "on-error" # 出错重新运行任务
+      __template__:
+        worker_num: ${worker_num:=1}
+
+  log_mp:
+    __sibling__:
+      worker_num: 1
+      worker_mode: process
+    __flow__:
+    - tool.range~throttle(throttle_args)~@print.watch(watch_args)~@send
+    - print.watch(watch_args)
+    print.watch:
+      worker_num: 2
+
+configs:
+  mock_data_args:
+    size: 30
+    batch: 1000
+    text_len: 20
+
+  throttle_args:
+    speed: 2
+
+  watch_args:
+    head: 20
+    step: 10

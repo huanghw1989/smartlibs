@@ -1,0 +1,37 @@
+app:
+  obj_storage:
+    connections:
+      local:
+        root_dir: ./logs
+        bucket_dir_mapping:
+          model: ~/Work/model
+
+    local_model:
+      type: local
+      connection_name: local
+      bucket_name: model
+      cache_dir: ./logs/model
+
+    cached_model:
+      type: local
+      connection_name: local
+      bucket_name: model
+      cache_dir: ./logs/model
+    
+    local_dataset:
+      type: local
+      connection_name: local
+      bucket_name: dataset
+      cache_dir: ./logs/dataset
+
+    public:
+      # 本地开发时, 一些项目共享文件存放到minio; 此部分配置不打包部署
+      type: minio
+      connection:
+        endpoint: ${minio_endpoint}
+        access_key: ${minio_access_key}
+        secret_key: ${minio_secret_key}
+        secure: False
+      bucket_name: ${minio_bucket_name}
+      bucket_root_path: ${minio_bucket_name}
+      cache_dir: ./logs/storage_public

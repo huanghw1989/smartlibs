@@ -1,0 +1,56 @@
+# Before Run: 
+#   start aaas: python -m smart.aaas.run 
+# Run Example:
+# python -m smart.auto.run starter.aaas.client test_guid_svr
+version: 1.0
+tasks:
+  __load__:
+    - auto_tasks.*.*
+    
+trees:
+  test:
+    __flow__:
+      - tools__tool.range~send
+      - tools__print.item_iter
+
+  test_guid_svr:
+    __sibling__:
+      worker_num: 1
+    __flow__:
+      # 启动 aaas 服务端任务
+      - aaas__client.conn(aaas_local)~run(guid_task)
+      # 模拟数据
+      - tools__tool.range~send
+      # 发送数据到 redis 请求队列
+      - redis__pip.conn(redis_local)~send(test_guid_svr.pip_req)
+      # 从 redis 响应队列接收数据, 打印接收到到数据(前n条)
+      # 注意: 因为task key(redis__pip.conn)不能重复, 因此第二个加$2, 实际调用的函数仍是redis__pip.conn
+      - redis__pip.conn$2(redis_local)~recv(test_guid_svr.pip_resp)~@tools__print.item_iter
+
+configs:
+  aaas_local:
+    entrypoint: 127.0.0.1:80
+    module: starter.aaas.server
+  
+  test_guid_svr:
+    pip_req:
+      key: test_guid_svr_req
+      # 结束后是否设置ttl
+      end_ttl: 60
+      # 启动前清空所有旧数据
+      empty_old: True
+    pip_resp:
+      key: test_guid_svr_resp
+
+  guid_task:
+    task_name: attach_guid
+    bind_arg:
+      redis__pip.recv:
+        __extend__: test_guid_svr.pip_req
+      redis__pip.send:
+        __extend__: test_guid_svr.pip_resp
+
+  redis_local:
+    host: localhost
+    port: 6379
+    password: 

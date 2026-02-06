@@ -1,0 +1,5 @@
+configs:
+  redis_server:
+    host: localhost
+    port: 6379
+    password: 
