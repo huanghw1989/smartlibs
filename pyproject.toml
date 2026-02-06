@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smartlibs"
+version = "0.1.9"
+description = "Smart Platforms Libs"
+readme = "readme.md"
+license = {text = "MIT"}
+requires-python = ">=3.5.0"
+authors = [
+    {name = "huanghongwu", email = "huanghongwu@sipuai.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "debugpy",
+    "fire",
+    "pyyaml",
+    "requests",
+    "redis",
+    "nvidia-ml-py",
+]
+
+[project.optional-dependencies]
+kafka = ["confluent-kafka"]
+
+[project.scripts]
+smart_auto = "smart.auto.run:cmd_ep"
+smart_auto_debug = "smart.auto.run_debug:cmd_ep"
+smart_aaas = "smart.aaas.run:cmd_ep"
+smart_aaas_debug = "smart.aaas.run_debug:cmd_ep"
+
+[project.urls]
+Homepage = "https://github.com/huanghw1989/smartlibs"
+Repository = "https://github.com/huanghw1989/smartlibs"
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "tests.*"]
+
+[tool.setuptools.package-data]
+auto_tasks = ["*.yml"]
