@@ -163,7 +163,7 @@ class Crond(BaseTaskManager):
         try:
             self.event_loop = loop
             self.async_tasks = [
-                task.start_loop(manager=self)
+                loop.create_task(task.start_loop(manager=self))
                 for task in self.run_timing_tasks
             ]
             

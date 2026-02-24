@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 NAME = 'smartlibs'
-VERSION = '0.1.9'
+VERSION = '0.1.10'
 DESCRIPTION = 'Smart Platforms Libs'
 EMAIL = 'huanghongwu@sipuai.com'
 AUTHOR = 'huanghongwu'
@@ -38,7 +38,6 @@ setup(
     packages=find_packages(
         exclude=['tests', 'tests.*']
     ),
-    namespace_packages=['smart', 'auto_tasks'],
     python_requires=REQUIRES_PYTHON,
     install_requires=REQUIRED,
     extras_require=EXTRAS_REQUIRE,
